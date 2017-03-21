@@ -9,14 +9,14 @@
 ___Notice: `koa-logger@2` supports `koa@2`; if you want to use this module with `koa@1`, please use `koa-logger@1`.___
 
 ```
-<-- GET /
---> GET / 200 835ms 746b
-<-- GET /
---> GET / 200 960ms 1.9kb
-<-- GET /users
---> GET /users 200 357ms 922b
-<-- GET /users?page=2
---> GET /users?page=2 200 466ms 4.66kb
+[2017-03-21T07:07:27.661Z] <-- GET /
+[2017-03-21T07:07:27.661Z] --> GET / 200 835ms 746b
+[2017-03-21T07:07:27.661Z] <-- GET /
+[2017-03-21T07:07:27.661Z] --> GET / 200 960ms 1.9kb
+[2017-03-21T07:07:27.661Z] <-- GET /users
+[2017-03-21T07:07:27.661Z] --> GET /users 200 357ms 922b
+[2017-03-21T07:07:27.661Z] <-- GET /users?page=2
+[2017-03-21T07:07:27.661Z] --> GET /users?page=2 200 466ms 4.66kb
 ```
 
 ## Installation

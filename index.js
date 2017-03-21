@@ -1,18 +1,17 @@
 /**
  * Module dependencies.
  */
-'use strict';
 
-const Counter = require('passthrough-counter');
-const humanize = require('humanize-number');
-const bytes = require('bytes');
-const chalk = require('chalk');
+var Counter = require('passthrough-counter');
+var humanize = require('humanize-number');
+var bytes = require('bytes');
+var chalk = require('chalk');
 
 /**
  * TTY check for dev format.
  */
 
-const isatty = process.stdout.isTTY;
+var isatty = process.stdout.isTTY;
 
 /**
  * Expose logger.
@@ -24,12 +23,12 @@ module.exports = dev;
  * Color map.
  */
 
-const colorCodes = {
+var colorCodes = {
   5: 'red',
   4: 'yellow',
   3: 'cyan',
-  2: 'green',
-  1: 'green',
+  2: 'blue',
+  1: 'blue',
   0: 'yellow'
 };
 
@@ -38,51 +37,52 @@ const colorCodes = {
  */
 
 function dev(opts) {
-  return function logger(ctx, next) {
+  return function *logger(next) {
     // request
-    const start = new Date;
-    console.log('  ' + chalk.gray('<--')
+    var start = new Date;
+    console.log(chalk.bold("[" + new Date().toISOString() + "]")
+      + ' ' + chalk.bold.gray('<--')
       + ' ' + chalk.bold('%s')
-      + ' ' + chalk.gray('%s'),
-        ctx.method,
-        ctx.originalUrl);
+      + ' ' + chalk.green('%s'),
+        this.method,
+        this.originalUrl);
 
-    return next().then(function() {
-
-      // calculate the length of a streaming response
-      // by intercepting the stream with a counter.
-      // only necessary if a content-length header is currently not set.
-      const length = ctx.response.length;
-      const body = ctx.body;
-      let counter;
-      if (null == length && body && body.readable) {
-        ctx.body = body
-          .pipe(counter = Counter())
-          .on('error', ctx.onerror);
-      }
-
-      // log when the response is finished or closed,
-      // whichever happens first.
-      const res = ctx.res;
-
-      const onfinish = done.bind(null, 'finish');
-      const onclose = done.bind(null, 'close');
-
-      res.once('finish', onfinish);
-      res.once('close', onclose);
-
-      function done(event){
-        res.removeListener('finish', onfinish);
-        res.removeListener('close', onclose);
-        log(ctx, start, counter ? counter.length : length, null, event);
-      }
-
-    }, function(err) {
+    try {
+      yield next;
+    } catch (err) {
       // log uncaught downstream errors
-      log(ctx, start, null, err);
+      log(this, start, null, err);
       throw err;
-    });
+    }
 
+    // calculate the length of a streaming response
+    // by intercepting the stream with a counter.
+    // only necessary if a content-length header is currently not set.
+    var length = this.response.length;
+    var body = this.body;
+    var counter;
+    if (null == length && body && body.readable) {
+      this.body = body
+        .pipe(counter = Counter())
+        .on('error', this.onerror);
+    }
+
+    // log when the response is finished or closed,
+    // whichever happens first.
+    var ctx = this;
+    var res = this.res;
+
+    var onfinish = done.bind(null, 'finish');
+    var onclose = done.bind(null, 'close');
+
+    res.once('finish', onfinish);
+    res.once('close', onclose);
+
+    function done(event){
+      res.removeListener('finish', onfinish);
+      res.removeListener('close', onclose);
+      log(ctx, start, counter ? counter.length : length, null, event);
+    }
   }
 }
 
@@ -92,16 +92,16 @@ function dev(opts) {
 
 function log(ctx, start, len, err, event) {
   // get the status code of the response
-  const status = err
+  var status = err
     ? (err.status || 500)
     : (ctx.status || 404);
 
   // set the color of the status code;
-  const s = status / 100 | 0;
-  const color = colorCodes[s];
+  var s = status / 100 | 0;
+  var color = colorCodes[s];
 
   // get the human readable response length
-  let length;
+  var length;
   if (~[204, 205, 304].indexOf(status)) {
     length = '';
   } else if (null == len) {
@@ -110,16 +110,17 @@ function log(ctx, start, len, err, event) {
     length = bytes(len);
   }
 
-  const upstream = err ? chalk.red('xxx')
+  var upstream = err ? chalk.red('xxx')
     : event === 'close' ? chalk.yellow('-x-')
-    : chalk.gray('-->')
+    : chalk.bold.gray('-->')
 
-  console.log('  ' + upstream
+  console.log(chalk.bold("[" + new Date().toISOString() + "]")
+    + ' ' +  upstream
     + ' ' + chalk.bold('%s')
-    + ' ' + chalk.gray('%s')
-    + ' ' + chalk[color]('%s')
-    + ' ' + chalk.gray('%s')
-    + ' ' + chalk.gray('%s'),
+    + ' ' + chalk.green('%s')
+    + ' ' + chalk[color].bold('%s')
+    + ' ' + chalk.green('%s')
+    + ' ' + chalk.green('%s'),
       ctx.method,
       ctx.originalUrl,
       status,
@@ -134,8 +135,9 @@ function log(ctx, start, len, err, event) {
  */
 
 function time(start) {
-  const delta = new Date - start;
-  return humanize(delta < 10000
+  var delta = new Date - start;
+  delta = delta < 10000
     ? delta + 'ms'
-    : Math.round(delta / 1000) + 's');
+    : Math.round(delta / 1000) + 's';
+  return humanize(delta);
 }
